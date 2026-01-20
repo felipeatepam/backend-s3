@@ -1,18 +1,23 @@
-"""Example of fastapi main file."""
-from typing import Union
-
-from fastapi import FastAPI
+import os
+import boto3
+from fastapi import FastAPI, HTTPException
 
 app = FastAPI()
 
+# Configuración actualizada para la estructura de carpetas
+S3_BUCKET = "kuberocketci-applications-data"
+# El "Key" en S3 incluye el nombre de la carpeta
+S3_FILE_KEY = "cmtr-0oqfemca/data.txt"
+
+s3_client = boto3.client('s3')
 
 @app.get("/")
 def read_root():
-    """Returns Hello World."""
-    return {"Hello": "World"}
+    try:
+        # Fetch del objeto con el prefijo de la carpeta
+        response = s3_client.get_object(Bucket=S3_BUCKET, Key=S3_FILE_KEY)
+        content = response['Body'].read().decode('utf-8').strip()
 
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, item_count: Union[str, None] = None):
-    """Returns numbers of items."""
-    return {"item_id": item_id, "q": item_count}
+        return {"content": content}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
